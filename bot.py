@@ -4,7 +4,8 @@ import random
 import string
 import logging
 import asyncio
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, types, F
+from aiogram.filters import Command
 from aiogram.client.default import DefaultBotProperties
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 
@@ -103,7 +104,7 @@ def menu_chon_sanh():
     ]
     return InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 
-@dp.message(filters.Command("start"))
+@dp.message(Command("start"))
 async def start_cmd(message: types.Message):
     uid = message.from_user.id
     if uid in users_vip:
@@ -191,7 +192,7 @@ async def process_room_select(callback_query: types.CallbackQuery):
     )
     await callback_query.answer()
 
-@dp.message(filters.Command("all"))
+@dp.message(Command("all"))
 async def all_cmd(message: types.Message):
     if not await check_user_limit(message): return
     uid = message.from_user.id
