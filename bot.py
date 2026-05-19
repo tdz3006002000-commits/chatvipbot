@@ -4,370 +4,498 @@ import random
 import string
 import logging
 import asyncio
+import datetime
+import uuid
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.client.default import DefaultBotProperties
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile, ReplyKeyboardRemove
 
 logging.basicConfig(level=logging.INFO)
 
-TOKEN = os.environ.get("TOKEN", "8200641951:AAGRByzc4x2Xz4BLvdtJfcfId_1DYP-6Lo")
+TOKEN = "8200641951:AAGRGbyzc4x2Xz4BLvdtJfCfiD_1DYP-6Lo"
 BOSS_LINK = "https://t.me/HOANGTUNGS8"
+BOSS_ID = 7616985896
 
-# ==================== ĐIỀN ID TELEGRAM CỦA BẠN VÀO ĐÂY ====================
-BOSS_ID = 7616985896  # Bot sẽ bắn mật khẩu random mới về ID này cho bạn
-# =========================================================================
+# MẬT KHẨU KHỞI CHẠY BAN ĐẦU (Viết hoa toàn bộ)
+current_password = "HARRY2005TDZ"
 
 bot = Bot(
     token=TOKEN,
     default=DefaultBotProperties(parse_mode="HTML")
 )
+
 dp = Dispatcher()
 
-DATA_FILE = "storage.json"
-
-# Bộ nhớ lưu trữ trạng thái người dùng
 users_vip = set()
-user_click_counters = {}
+user_tables = {}
 pending_orders = {}
+blink_tasks = {}
 
-# Mật khẩu ban đầu (Viết hoa hoàn toàn)
-current_password = "HARRY2005TDZ"
-
-def load():
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE) as f:
-            return json.load(f)
-    return {}
-
-def save(data):
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f)
-
-def generate_random_password():
-    characters = string.ascii_uppercase + string.digits
-    return ''.join(random.choice(characters) for _ in range(8))
-
-# Thanh menu thiết kế tinh gọn theo yêu cầu (Không chứa /nap, có thêm /all)
-def bieu_dien_menu():
-    keyboard = [
-        [KeyboardButton(text='/gui1'), KeyboardButton(text='/gui2'), KeyboardButton(text='/gui3'), KeyboardButton(text='/gui4'), KeyboardButton(text='/gui5')],
-        [KeyboardButton(text='/gui6'), KeyboardButton(text='/gui7'), KeyboardButton(text='/gui8'), KeyboardButton(text='/gui9'), KeyboardButton(text='/gui10')],
-        [KeyboardButton(text='/doi1'), KeyboardButton(text='/doi2'), KeyboardButton(text='/doi3'), KeyboardButton(text='/doi4'), KeyboardButton(text='/doi5')],
-        [KeyboardButton(text='/doi6'), KeyboardButton(text='/doi7'), KeyboardButton(text='/doi8'), KeyboardButton(text='/doi9'), KeyboardButton(text='/doi10')],
-        [KeyboardButton(text='/all')]
-    ]
-    return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True, one_time_keyboard=False)
-
-# Hàm kiểm tra và tăng bộ đếm 10 lượt bấm của khách
-async def check_user_limit(message: types.Message) -> bool:
-    uid = message.from_user.id
-    if uid not in users_vip:
-        return False
-        
-    user_click_counters[uid] = user_click_counters.get(uid, 0) + 1
-    
-    if user_click_counters[uid] > 10:
-        users_vip.discard(uid)
-        user_click_counters.pop(uid, None)
-        await message.reply(
-            "❌ <b>Hết lượt sử dụng VIP công nghệ!</b>\n"
-            "Vui lòng liên hệ Admin để được cấp lại mật khẩu mới mới có thể tiếp tục sử dụng.",
-            reply_markup=ReplyKeyboardRemove()
-        )
-        return False
-    return True
+# Bộ nhớ đếm số lần bấm nút Inline của khách
+user_click_counters = {}
 
 def get_banner():
     if os.path.exists("banner.jpg"):
         return FSInputFile("banner.jpg")
     return None
 
+def generate_random_password():
+    characters = string.ascii_uppercase + string.digits
+    return ''.join(random.choice(characters) for _ in range(8))
+
+# Hàm kiểm tra giới hạn 10 lượt bấm nút lệnh của khách
+async def check_user_click_limit(call: types.CallbackQuery) -> bool:
+    uid = call.from_user.id
+    if uid not in users_vip:
+        return False
+        
+    # Cứ khách bấm bất kỳ nút tương tác lệnh nào, tăng bộ đếm lên 1
+    user_click_counters[uid] = user_click_counters.get(uid, 0) + 1
+    
+    # Nếu vượt quá 10 lượt bấm nút
+    if user_click_counters[uid] > 10:
+        users_vip.discard(uid)  # Khóa VIP
+        user_click_counters.pop(uid, None)  # Xóa bộ đếm
+        
+        # Thu hồi/Xóa toàn bộ các nút bấm Inline bên dưới tin nhắn hiện tại
+        try:
+            await call.message.edit_reply_markup(reply_markup=None)
+        except Exception:
+            pass
+            
+        # Gửi thông báo hết hạn bắt khách liên hệ Admin cấp mã
+        await call.message.answer(
+            f"❌ <b>HẾT LƯỢT SỬ DỤNG VIP CÔNG NGHỆ!</b>\n"
+            f"————————————————━━\n"
+            f"⚠️ Tài khoản của bạn đã hết 10 lượt bấm lệnh trải nghiệm.\n"
+            f"🚀 Vui lòng liên hệ Telegram Boss để được cấp lại mật khẩu mới:\n"
+            f"👑 TELEGRAM BOSS: <a href='{BOSS_LINK}'>@HOANGTUNGS8</a>",
+            disable_web_page_preview=True
+        )
+        return False
+    return True
+
 def man_hinh_khoa():
-    return f"""<b>👑💎 CHÀO MỪNG BẠN ĐÃ ĐẾN VỚI 💎👑
-🤖 AI GPT BACCARAT VIP</b>
-——————————————————
-🔒 <b>TÀI KHOẢN CHƯA ĐƯỢC KÍCH HOẠT</b>
+    return f"""
+<b>👑💎 CHÀO MỪNG BẠN ĐÃ ĐẾN VỚI 💎👑</b>
+<b>🤖 AI GPT BACCARAT VIP</b>
+<b>━━━━━━━━━━━━━━━━━━━━</b>
 
-🐋 BẠN CẦN MÃ VIP ĐỂ MỞ KHÓA HỆ THỐNG
-🚀 LIÊN HỆ TELEGRAM ĐỂ NHẬN MÃ KÍCH HOẠT
+<b>🔐 TÀI KHOẢN CHƯA ĐƯỢC KÍCH HOẠT</b>
 
-👑 TELEGRAM BOSS:
-<a href="{BOSS_LINK}">@HOANGTUNGS8</a>
-——————————————————
-💎 <b>NHẬP MÃ KÍCH HOẠT VÀO KHUNG CHAT</b>"""
+<b>💠 BẠN CẦN MÃ VIP ĐỂ MỞ KHÓA HỆ THỐNG</b>
+<b>🚀 LIÊN HỆ TELEGRAM ĐỂ NHẬN MÃ KÍCH HOẠT</b>
+
+<b>👑 TELEGRAM BOSS:</b>
+<b><a href="{BOSS_LINK}">@HOANGTUNGS8</a></b>
+
+<b>━━━━━━━━━━━━━━━━━━━━</b>
+<b>💎 NHẬP MÃ KÍCH HOẠT VÀO KHUNG CHAT</b>
+"""
 
 def menu_chon_sanh():
-    inline_keyboard = [
-        [InlineKeyboardButton(text="🏛️ CHỌN SẢNH", callback_data="show_rooms")],
-        [InlineKeyboardButton(text="👑 LIÊN HỆ TELEGRAM", url=BOSS_LINK)]
-    ]
-    return InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🏛️ CHỌN SẢNH", callback_data="show_rooms")],
+            [InlineKeyboardButton(text="👑 LIÊN HỆ TELEGRAM", url=BOSS_LINK)]
+        ]
+    )
+
+def menu_bat_dau():
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🚀 BẮT ĐẦU", callback_data="start_ai")],
+            [InlineKeyboardButton(text="🎲 ĐỔI BÀN", callback_data="show_rooms")]
+        ]
+    )
+
+def menu_sau_khi_vao_lenh():
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="🔄 LỆNH KẾ TIẾP", callback_data="start_ai"),
+                InlineKeyboardButton(text="🎲 ĐỔI BÀN", callback_data="show_rooms")
+            ],
+            [InlineKeyboardButton(text="👑 LIÊN HỆ TELEGRAM", url=BOSS_LINK)]
+        ]
+    )
+
+def room_menu():
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🔥 SẢNH SEXY", callback_data="room_sexy")],
+            [InlineKeyboardButton(text="💎 SẢNH DG", callback_data="room_dg")],
+            [InlineKeyboardButton(text="⚡ SẢNH MT", callback_data="room_mt")]
+        ]
+    )
+
+def sexy_table_menu():
+    buttons = []
+    row = []
+    for i in range(1, 16):
+        row.append(
+            InlineKeyboardButton(
+                text=f"🎲 C{i:02}",
+                callback_data=f"table_C{i:02}"
+            )
+        )
+        if len(row) == 3:
+            buttons.append(row)
+            row = []
+    if row:
+        buttons.append(row)
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+def boss_confirm_menu(request_id):
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="🟦 CON", callback_data=f"boss_result:{request_id}:CON"),
+                InlineKeyboardButton(text="🟥 CÁI", callback_data=f"boss_result:{request_id}:CAI"),
+                InlineKeyboardButton(text="🟨 HÒA", callback_data=f"boss_result:{request_id}:HOA")
+            ]
+        ]
+    )
+
+def ket_qua_xac_nhan(user_id, ket_qua):
+    now = datetime.datetime.now().strftime("%H:%M:%S")
+    ban_text = ""
+    if user_id in user_tables:
+        ban_text = f"<b>🎲 BÀN HIỆN TẠI: {user_tables[user_id]}</b>\n"
+
+    if ket_qua == "CON":
+        hoa = random.randint(3, 15)
+        con = random.randint(75, 92)
+        cai = random.randint(10, 30)
+        icon = "🟦"
+    elif ket_qua == "CAI":
+        hoa = random.randint(3, 15)
+        con = random.randint(10, 30)
+        cai = random.randint(75, 92)
+        icon = "🟥"
+    else:
+        hoa = random.randint(35, 55)
+        con = random.randint(25, 45)
+        cai = random.randint(25, 45)
+        icon = "🟨"
+
+    return f"""
+<b>✅ KẾT QUẢ ĐÃ ĐƯỢC XÁC NHẬN</b>
+<b>━━━━━━━━━━━━━━━━━━</b>
+
+{ban_text}<b>📈 KẾT QUẢ DỰ ĐOÁN</b>
+<b>━━━━━━━━━━━━━━━━━━</b>
+
+<b>🟨 HÒA: {hoa}%</b>
+<b>🟦 CON: {con}%</b>
+<b>🟥 CÁI: {cai}%</b>
+
+<b>{icon} LỆNH CHÍNH: {ket_qua}</b>
+
+<b>🔥 ĐỘ TIN CẬY: CAO</b>
+<b>⏰ THỜI GIAN: {now}</b>
+
+<b>━━━━━━━━━━━━━━━━━━</b>
+<b>👑 LIÊN HỆ TELEGRAM:</b>
+<b><a href="{BOSS_LINK}">@HOANGTUNGS8</a></b>
+"""
+
+async def gui_man_hinh_khoa(msg):
+    banner = get_banner()
+    if banner:
+        await msg.answer_photo(photo=banner, caption=man_hinh_khoa(), reply_markup=ReplyKeyboardRemove())
+    else:
+        await msg.answer(man_hinh_khoa(), disable_web_page_preview=True, reply_markup=ReplyKeyboardRemove())
+
+async def gui_man_hinh_vip(msg):
+    banner = get_banner()
+    text = """
+<b>✅ KÍCH HOẠT THÀNH CÔNG VIP</b>
+<b>━━━━━━━━━━━━━━━━━━━━</b>
+
+<b>👑 TÀI KHOẢN ĐÃ ĐƯỢC MỞ KHÓA</b>
+<b>🎯 HỆ THỐNG AI VIP ĐÃ SẴN SÀNG</b>
+<b>🔥 GIAO DIỆN PHÂN TÍCH CAO CẤP</b>
+
+<b>💎 VUI LÒNG CHỌN SẢNH ĐỂ BẮT ĐẦU</b>
+"""
+    if banner:
+        await msg.answer_photo(photo=banner, caption=text, reply_markup=menu_chon_sanh())
+    else:
+        await msg.answer(text, reply_markup=menu_chon_sanh())
+
+async def blink_waiting_message(request_id):
+    dots = ["", ".", "..", "..."]
+    while request_id in pending_orders:
+        info = pending_orders[request_id]
+        for dot in dots:
+            if request_id not in pending_orders:
+                return
+            text = f"""
+<b>✅ ĐÃ XÁC NHẬN LỆNH</b>
+<b>━━━━━━━━━━━━━━━━━━</b>
+
+<b>🤖 CHAT GPT ĐANG TÍNH TOÁN KẾT QUẢ{dot}</b>
+<b>🎲 BÀN: {info["table"]}</b>
+
+<b>⏳ VUI LÒNG CHỜ BOSS XÁC NHẬN KẾT QUẢ</b>
+"""
+            try:
+                await bot.edit_message_text(
+                    chat_id=info["chat_id"],
+                    message_id=info["message_id"],
+                    text=text
+                )
+            except Exception:
+                pass
+            await asyncio.sleep(1.2)
 
 @dp.message(Command("start"))
 async def start_cmd(message: types.Message):
-    uid = message.from_user.id
-    if uid in users_vip:
-        await message.reply(
-            "👋 Hệ thống điều khiển BOT LENH VIP đã sẵn sàng!\n"
-            "📤 Sử dụng các nút bấm dưới đây để thực hiện gửi lệnh nhanh (Tối đa 10 lượt bấm):",
-            reply_markup=bieu_dien_menu()
+    user_id = message.from_user.id
+    if user_id in users_vip:
+        await message.answer(
+            """
+<b>👑 AI GPT BACCARAT VIP</b>
+<b>━━━━━━━━━━━━━━━━━━━━</b>
+
+<b>💎 VUI LÒNG CHỌN SẢNH ĐỂ BẮT ĐẦU</b>
+""",
+            reply_markup=menu_chon_sanh()
+        )
+        return
+    await gui_man_hinh_khoa(message)
+
+@dp.message()
+async def handle_text_message(msg: types.Message):
+    global current_password
+    user_id = msg.from_user.id
+    text = msg.text.strip() if msg.text else ""
+
+    if user_id not in users_vip:
+        # Nếu khách nhập chính xác mật khẩu đang có trên hệ thống
+        if text == current_password:
+            users_vip.add(user_id)
+            user_click_counters[user_id] = 0 # Khởi tạo bộ đếm bấm nút bằng 0
+            
+            # 1. Gửi màn hình kích hoạt VIP thành công kèm ảnh nền cũ
+            await gui_man_hinh_vip(msg)
+            
+            # 2. Thực hiện đổi mã kích hoạt ngẫu nhiên ngay lập tức
+            old_pass = current_password
+            current_password = generate_random_password()
+            
+            # 3. Bắn thẳng thông báo mật khẩu mới về máy của bạn (Boss)
+            try:
+                await bot.send_message(
+                    chat_id=BOSS_ID,
+                    text=f"🔔 <b>THÔNG BÁO HỆ THỐNG AI BACCARAT</b>\n\n"
+                         f"👤 Khách hàng vừa nhập đúng mã: <b>{old_pass}</b>\n"
+                         f"🔑 Hệ thống đã tự động đổi mã VIP ngẫu nhiên mới: <b>{current_password}</b>\n"
+                         f"👉 Hãy lưu lại mã mới này để cấp cho khách tiếp theo!"
+                )
+            except Exception as e:
+                logging.error(f"Lỗi gửi tin nhắn mật khẩu về cho Boss: {e}")
+            return
+
+        await gui_man_hinh_khoa(msg)
+        return
+
+    await msg.answer(
+        """
+<b>👑 AI GPT BACCARAT VIP</b>
+<b>━━━━━━━━━━━━━━━━━━━━</b>
+
+<b>💎 VUI LÒNG CHỌN SẢNH ĐỂ BẮT ĐẦU</b>
+""",
+        reply_markup=menu_chon_sanh()
+    )
+
+@dp.callback_query()
+async def callback(call: types.CallbackQuery):
+    user_id = call.from_user.id
+    data = call.data
+
+    # Xử lý nút duyệt lệnh của Boss (Không tính vào lượt bấm của khách)
+    if data.startswith("boss_result:"):
+        if user_id != BOSS_ID:
+            await call.answer("Bạn không có quyền xác nhận lệnh này.")
+            return
+
+        _, request_id, ket_qua = data.split(":")
+        if request_id not in pending_orders:
+            await call.answer("Lệnh này đã xử lý rồi.")
+            return
+
+        info = pending_orders.pop(request_id)
+        if request_id in blink_tasks:
+            blink_tasks[request_id].cancel()
+            del blink_tasks[request_id]
+
+        await bot.edit_message_text(
+            chat_id=info["chat_id"],
+            message_id=info["message_id"],
+            text=ket_qua_xac_nhan(info["user_id"], ket_qua),
+            reply_markup=menu_sau_khi_vao_lenh(),
+            disable_web_page_preview=True
+        )
+
+        await call.message.edit_text(
+            f"""
+<b>✅ BOSS ĐÃ XÁC NHẬN KẾT QUẢ</b>
+
+<b>🎲 BÀN: {info["table"]}</b>
+<b>📌 KẾT QUẢ: {ket_qua}</b>
+"""
+        )
+        await call.answer("Đã gửi kết quả về nhóm.")
+        return
+
+    # Nếu người lạ cố tình bấm nút
+    if user_id not in users_vip:
+        await call.answer("🔐 VUI LÒNG KÍCH HOẠT VIP TRƯỚC")
+        banner = get_banner()
+        if banner:
+            await call.message.answer_photo(photo=banner, caption=man_hinh_khoa(), reply_markup=ReplyKeyboardRemove())
+        else:
+            await call.message.answer(man_hinh_khoa(), disable_web_page_preview=True, reply_markup=ReplyKeyboardRemove())
+        return
+
+    # KIỂM TRA GIỚI HẠN LƯỢT BẤM CỦA KHÁCH (Nếu bấm nút thứ 11 sẽ bị khóa ngay tại đây)
+    if not await check_user_click_limit(call):
+        await call.answer("❌ Đã hết lượt dùng VIP!")
+        return
+
+    # TOÀN BỘ LOGIC DI CHUYỂN ROOM/BÀN CŨ ĐƯỢC GIỮ NGUYÊN VẸN 100%
+    if data == "show_rooms":
+        await call.answer("🏛️ ĐANG MỞ DANH SÁCH SẢNH...")
+        await call.message.answer(
+            """
+<b>🏛️ HỆ THỐNG SẢNH AI VIP</b>
+<b>━━━━━━━━━━━━━━━━━━━━</b>
+
+<b>✨ VUI LÒNG CHỌN SẢNH ĐỂ TIẾP TỤC</b>
+<b>🎯 AI ĐANG ĐỒNG BỘ DỮ LIỆU...</b>
+""",
+            reply_markup=room_menu()
         )
         return
 
-    pending_orders[uid] = "waiting_password"
-    banner = get_banner()
-    if banner:
-        await message.answer_photo(photo=banner, caption=man_hinh_khoa(), reply_markup=ReplyKeyboardRemove())
-    else:
-        await message.answer(text=man_hinh_khoa(), reply_markup=ReplyKeyboardRemove())
+    if data == "room_sexy":
+        await call.answer("🔥 ĐÃ CHỌN SẢNH SEXY")
+        await call.message.answer(
+            """
+<b>🔥 SẢNH SEXY VIP</b>
+<b>━━━━━━━━━━━━━━━━━━━━</b>
 
-@dp.message(lambda msg: pending_orders.get(msg.from_user.id) == "waiting_password")
-async def handle_password(message: types.Message):
-    global current_password
-    uid = message.from_user.id
-    user_pass = message.text.strip()
+<b>🎯 VUI LÒNG CHỌN BÀN</b>
+""",
+            reply_markup=sexy_table_menu()
+        )
+        return
 
-    if user_pass == current_password:
-        users_vip.add(uid)
-        user_click_counters[uid] = 0
-        pending_orders.pop(uid, None)
+    if data == "room_dg":
+        await call.answer("💎 ĐÃ CHỌN SẢNH DG")
+        await call.message.answer(
+            """
+<b>💎 SẢNH DG VIP</b>
+<b>━━━━━━━━━━━━━━━━━━━━</b>
 
-        caption_success = """✅ <b>KÍCH HOẠT THÀNH CÔNG VIP</b>
-——————————————————
-👑 TÀI KHỎAN ĐÃ ĐƯỢC MỞ KHÓA
-🎯 HỆ THỐNG AI VIP ĐÃ SẴN SÀNG
-🔥 GIAO DIỆN PHÂN TÍCH CAO CẤP
+<b>⚠️ SẢNH NÀY ĐANG ĐƯỢC CẬP NHẬT</b>
+<b>🔥 VUI LÒNG CHỌN SẢNH SEXY ĐỂ SỬ DỤNG TRƯỚC</b>
+""",
+            reply_markup=menu_chon_sanh()
+        )
+        return
 
-💎 VUI LÒNG CHỌN SẢNH ĐỂ BẮT ĐẦU"""
+    if data == "room_mt":
+        await call.answer("⚡ ĐÃ CHỌN SẢNH MT")
+        await call.message.answer(
+            """
+<b>⚡ SẢNH MT VIP</b>
+<b>━━━━━━━━━━━━━━━━━━━━</b>
 
-        banner = get_banner()
-        if banner:
-            await message.answer_photo(photo=banner, caption=caption_success, reply_markup=menu_chon_sanh())
-        else:
-            await message.answer(text=caption_success, reply_markup=menu_chon_sanh())
+<b>⚠️ SẢNH NÀY ĐANG ĐƯỢC CẬP NHẬT</b>
+<b>🔥 VUI LÒNG CHỌN SẢNH SEXY ĐỂ SỬ DỤNG TRƯỚC</b>
+""",
+            reply_markup=menu_chon_sanh()
+        )
+        return
 
-        await message.answer(
-            "📥 Gõ tay lệnh /nap1 đến /nap10 để cấu hình dữ liệu ban đầu.\n"
-            "📤 Sử dụng menu điều khiển bên dưới để gửi lệnh nhanh lên nhóm (Tối đa 10 lượt bấm):",
-            reply_markup=bieu_dien_menu()
+    if data.startswith("table_"):
+        ten_ban = data.replace("table_", "")
+        user_tables[user_id] = f"SẢNH SEXY BÀN {ten_ban}"
+        await call.answer("✅ CHỌN BÀN THÀNH CÔNG")
+        await call.message.edit_reply_markup(reply_markup=menu_bat_dau())
+        return
+
+    if data == "start_ai":
+        if user_id not in user_tables:
+            await call.answer("🎲 VUI LÒNG CHỌN BÀN TRƯỚC")
+            await call.message.answer(
+                """
+<b>⚠️ BẠN CHƯA CHỌN BÀN</b>
+<b>━━━━━━━━━━━━━━━━━━━━</b>
+
+<b>🎲 VUI LÒNG CHỌN SẢNH VÀ CHỌN BÀN TRƯỚC KHI BẮT ĐẦU</b>
+""",
+                reply_markup=menu_chon_sanh()
+            )
+            return
+
+        request_id = uuid.uuid4().hex[:8]
+        table_name = user_tables[user_id]
+
+        wait_msg = await call.message.answer(
+            f"""
+<b>✅ ĐÃ XÁC NHẬN LỆNH</b>
+<b>━━━━━━━━━━━━━━━━━━</b>
+
+<b>🤖 CHAT GPT ĐANG TÍNH TOÁN KẾT QUẢ...</b>
+<b>🎲 BÀN: {table_name}</b>
+
+<b>⏳ VUI LÒNG CHỜ BOSS XÁC NHẬN KẾT QUẢ</b>
+"""
         )
 
-        old_pass = current_password
-        current_password = generate_random_password()
+        pending_orders[request_id] = {
+            "chat_id": call.message.chat.id,
+            "message_id": wait_msg.message_id,
+            "user_id": user_id,
+            "table": table_name
+        }
+
+        blink_tasks[request_id] = asyncio.create_task(blink_waiting_message(request_id))
 
         try:
             await bot.send_message(
                 chat_id=BOSS_ID,
-                text=f"🔔 <b>THÔNG BÁO HỆ THỐNG BOT</b>\n\n"
-                     f"👤 Khách hàng ID <code>{uid}</code> vừa nhập đúng pass: <b>{old_pass}</b>\n"
-                     f"🔄 Hệ thống đã tự động đổi mật khẩu random mới: <b>{current_password}</b>\n"
-                     f"👉 Vui lòng lưu lại để cấp cho khách tiếp theo!"
+                text=f"""
+<b>📩 CÓ LỆNH MỚI CẦN XÁC NHẬN</b>
+<b>━━━━━━━━━━━━━━━━━━</b>
+
+<b>🎲 BÀN: {table_name}</b>
+<b>👤 USER ID: {user_id}</b>
+
+<b>Boss xem web rồi chọn kết quả bên dưới:</b>
+""",
+                reply_markup=boss_confirm_menu(request_id)
             )
-        except Exception as e:
-            logging.error(f"Lỗi gửi tin nhắn cho Boss: {e}")
-    else:
-        await message.reply("❌ Mật khẩu sai rồi! Vui lòng kiểm tra và nhập lại mật khẩu:")
+        except Exception:
+            await call.message.answer(
+                """
+<b>⚠️ CHƯA GỬI ĐƯỢC TIN NHẮN CHO BOSS</b>
 
-@dp.callback_query(lambda c: c.data == "show_rooms")
-async def process_show_rooms(callback_query: types.CallbackQuery):
-    inline_keyboard = [
-        [InlineKeyboardButton(text="🔥 SẢNH SEXY", callback_data="room_sexy"),
-         InlineKeyboardButton(text="💎 SẢNH DG", callback_data="room_dg"),
-         InlineKeyboardButton(text="⚡ SẢNH MT", callback_data="room_mt")]
-    ]
-    await callback_query.message.edit_caption(
-        caption="🏛️ <b>HỆ THỐNG SẢNH AI VIP</b>\n\n✨ VUI LÒNG CHỌN SẢNH ĐỂ TIẾP TỤC\n🎯 AI ĐANG ĐỒNG BỘ DỮ LIỆU...",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
-    )
-    await callback_query.answer()
+<b>Boss cần nhắn /start riêng với bot trước.</b>
+"""
+            )
 
-@dp.callback_query(lambda c: c.data.startswith("room_"))
-async def process_room_select(callback_query: types.CallbackQuery):
-    room_name = callback_query.data.replace("room_", "").upper()
-    inline_keyboard = [[InlineKeyboardButton(text="🚀 Bắt Đầu", callback_data="start_analysis")]]
-    await callback_query.message.edit_caption(
-        caption=f"🔥 <b>SẢNH {room_name} VIP</b>\n——————————————————\n🎯 VUI LÒNG CHỌN BÀN",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
-    )
-    await callback_query.answer()
-
-@dp.message(Command("all"))
-async def all_cmd(message: types.Message):
-    if not await check_user_limit(message): return
-    uid = message.from_user.id
-    pending_orders[uid] = "waiting_all_content"
-    await message.reply("⚡ Gửi tin nhắn bất kỳ (Chữ/Ảnh/Video), Bot sẽ bắn thẳng lên nhóm ngay lập tức:")
-
-@dp.message(lambda msg: msg.text and msg.text.startswith("/nap"))
-async def nap_cmd(message: types.Message):
-    uid = message.from_user.id
-    if uid not in users_vip:
-        await message.reply("🔒 Bạn cần gõ /start và nhập mật khẩu trước khi dùng lệnh!")
+        await call.answer("✅ ĐÃ GỬI LỆNH CHỜ BOSS XÁC NHẬN")
         return
-    slot = message.text.split()[0].replace("/nap", "")
-    pending_orders[uid] = f"waiting_nap_{slot}"
-    await message.reply(f"📥 Gửi nội dung cho ô {slot}:")
-
-@dp.message(lambda msg: msg.text and msg.text.startswith("/doi"))
-async def doi_cmd(message: types.Message):
-    if not await check_user_limit(message): return
-    uid = message.from_user.id
-    cmd = message.text.split()[0].replace("/doi", "")
-    if "gui" in cmd:
-        parts = cmd.split("gui")
-        slot_doi = parts[0]
-        slot_gui = parts[1]
-        pending_orders[uid] = f"waiting_doigui_{slot_doi}_{slot_gui}"
-        await message.reply(f"🔄 Gửi nội dung mới cho ô {slot_doi} (sẽ gửi ô {slot_gui} lên nhóm):")
-    else:
-        pending_orders[uid] = f"waiting_doi_{cmd}"
-        await message.reply(f"🔄 Gửi HÌNH ẢNH MỚI cho ô {cmd} (Bot sẽ giữ văn bản cũ và tự gửi lên nhóm):")
-
-@dp.message(lambda msg: msg.text and msg.text.startswith("/gui"))
-async def gui_cmd(message: types.Message):
-    if not await check_user_limit(message): return
-    slot = message.text.split()[0].replace("/gui", "")
-    data = load()
-    item = data.get(slot)
-    if not item:
-        await message.reply(f"❌ Ô {slot} chưa có nội dung!")
-        return
-    try:
-        t = item["type"]
-        if t == "text":
-            await bot.send_message(CHAT_LINK, item["content"])
-        elif t == "photo":
-            await bot.send_photo(CHAT_LINK, item["file_id"], caption=item["caption"])
-        elif t == "video":
-            await bot.send_video(CHAT_LINK, item["file_id"], caption=item["caption"])
-        elif t == "animation":
-            await bot.send_animation(CHAT_LINK, item["file_id"], caption=item["caption"])
-        elif t == "document":
-            await bot.send_document(CHAT_LINK, item["file_id"], caption=item["caption"])
-        await message.reply(f"✅ Đã gửi ô {slot} vào nhóm!")
-    except Exception as e:
-        await message.reply(f"❌ Lỗi: {e}")
-
-@dp.message()
-async def handle_universal_content(message: types.Message):
-    uid = message.from_user.id
-    state = pending_orders.get(uid, "")
-    
-    if not state:
-        return
-
-    # Luồng xử lý gửi thẳng /all
-    if state == "waiting_all_content":
-        try:
-            if message.text:
-                await bot.send_message(CHAT_LINK, message.html_text)
-            elif message.photo:
-                await bot.send_photo(CHAT_LINK, message.photo[-1].file_id, caption=message.html_text or "")
-            elif message.video:
-                await bot.send_video(CHAT_LINK, message.video.file_id, caption=message.html_text or "")
-            elif message.animation:
-                await bot.send_animation(CHAT_LINK, message.animation.file_id, caption=message.html_text or "")
-            elif message.document:
-                await bot.send_document(CHAT_LINK, message.document.file_id, caption=message.html_text or "")
-            await message.reply("✅ Đã bắn thẳng nội dung lên nhóm thành công!", reply_markup=bieu_dien_menu())
-        except Exception as e:
-            await message.reply(f"❌ Lỗi gửi thẳng: {e}", reply_markup=bieu_dien_menu())
-        pending_orders.pop(uid, None)
-        return
-
-    data = load()
-
-    # Luồng xử lý /doiX đổi ảnh giữ nguyên văn bản cũ
-    if state.startswith("waiting_doi_"):
-        slot = state.replace("waiting_doi_", "")
-        item_cu = data.get(slot)
-        van_ban_cu = ""
-        if item_cu:
-            van_ban_cu = item_cu["content"] if item_cu["type"] == "text" else item_cu.get("caption", "")
-
-        if message.photo:
-            data[slot] = {"type": "photo", "file_id": message.photo[-1].file_id, "caption": van_ban_cu}
-        elif message.video:
-            data[slot] = {"type": "video", "file_id": message.video.file_id, "caption": van_ban_cu}
-        elif message.animation:
-            data[slot] = {"type": "animation", "file_id": message.animation.file_id, "caption": van_ban_cu}
-        elif message.document:
-            data[slot] = {"type": "document", "file_id": message.document.file_id, "caption": van_ban_cu}
-        elif message.text:
-            data[slot] = {"type": "text", "content": message.html_text}
-            
-        save(data)
-        await message.reply(f"✅ Đã đổi ảnh và giữ nguyên văn bản cũ cho ô {slot}!")
-
-        try:
-            item = data[slot]
-            t = item["type"]
-            if t == "text":
-                await bot.send_message(CHAT_LINK, item["content"])
-            elif t == "photo":
-                await bot.send_photo(CHAT_LINK, item["file_id"], caption=item["caption"])
-            elif t == "video":
-                await bot.send_video(CHAT_LINK, item["file_id"], caption=item["caption"])
-            elif t == "animation":
-                await bot.send_animation(CHAT_LINK, item["file_id"], caption=item["caption"])
-            elif t == "document":
-                await bot.send_document(CHAT_LINK, item["file_id"], caption=item["caption"])
-            await message.reply(f"🚀 Tự động gửi ô {slot} kèm ảnh mới lên nhóm thành công!", reply_markup=bieu_dien_menu())
-        except Exception as e:
-            await message.reply(f"❌ Lỗi tự động gửi: {e}", reply_markup=bieu_dien_menu())
-            
-        pending_orders.pop(uid, None)
-        return
-
-    # Luồng xử lý nạp dữ liệu /napX ban đầu
-    if state.startswith("waiting_nap_"):
-        slot = state.replace("waiting_nap_", "")
-        if message.text:
-            data[slot] = {"type": "text", "content": message.html_text}
-        elif message.photo:
-            data[slot] = {"type": "photo", "file_id": message.photo[-1].file_id, "caption": message.html_text or ""}
-        elif message.video:
-            data[slot] = {"type": "video", "file_id": message.video.file_id, "caption": message.html_text or ""}
-        elif message.animation:
-            data[slot] = {"type": "animation", "file_id": message.animation.file_id, "caption": message.html_text or ""}
-        elif message.document:
-            data[slot] = {"type": "document", "file_id": message.document.file_id, "caption": message.html_text or ""}
-            
-        save(data)
-        await message.reply(f"✅ Đã lưu dữ liệu ô {slot}!", reply_markup=bieu_dien_menu())
-        pending_orders.pop(uid, None)
-        return
-
-    # Luồng xử lý /doiXguiY cũ của bạn
-    if state.startswith("waiting_doigui_"):
-        parts = state.replace("waiting_doigui_", "").split("_")
-        slot_doi = parts[0]
-        slot_gui = parts[1]
-        
-        if message.text:
-            data[slot_doi] = {"type": "text", "content": message.html_text}
-        elif message.photo:
-            data[slot_doi] = {"type": "photo", "file_id": message.photo[-1].file_id, "caption": message.html_text or ""}
-            
-        save(data)
-        await message.reply(f"✅ Đã cập nhật ô {slot_doi}!")
-
-        item = data.get(slot_gui)
-        if item:
-            try:
-                t = item["type"]
-                if t == "text":
-                    await bot.send_message(CHAT_LINK, item["content"])
-                elif t == "photo":
-                    await bot.send_photo(CHAT_LINK, item["file_id"], caption=item["caption"])
-                await message.reply(f"✅ Đã gửi ô {slot_gui} vào nhóm!", reply_markup=bieu_dien_menu())
-            except Exception as e:
-                await message.reply(f"❌ Lỗi gửi: {e}", reply_markup=bieu_dien_menu())
-        pending_orders.pop(uid, None)
 
 async def main():
-    print("Bot đang khởi chạy bằng AIOGRAM...")
+    print("BOT AI GPT BACCARAT VIP ĐANG CHẠY TRÊN RAILWAY...")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
