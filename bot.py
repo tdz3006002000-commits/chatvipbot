@@ -67,7 +67,7 @@ async def check_user_click_limit(call: types.CallbackQuery) -> bool:
         # Gửi thông báo hết hạn bắt khách liên hệ Admin cấp mã
         await call.message.answer(
             f"❌ <b>HẾT LƯỢT SỬ DỤNG VIP CÔNG NGHỆ!</b>\n"
-            f"————————————————━━\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
             f"⚠️ Tài khoản của bạn đã hết 10 lượt bấm lệnh trải nghiệm.\n"
             f"🚀 Vui lòng liên hệ Telegram Boss để được cấp lại mật khẩu mới:\n"
             f"👑 TELEGRAM BOSS: <a href='{BOSS_LINK}'>@HOANGTUNGS8</a>",
@@ -77,8 +77,7 @@ async def check_user_click_limit(call: types.CallbackQuery) -> bool:
     return True
 
 def man_hinh_khoa():
-    return f"""
-<b>👑💎 CHÀO MỪNG BẠN ĐÃ ĐẾN VỚI 💎👑</b>
+    return f"""<b>👑💎 CHÀO MỪNG BẠN ĐÃ ĐẾN VỚI 💎👑</b>
 <b>🤖 AI GPT BACCARAT VIP</b>
 <b>━━━━━━━━━━━━━━━━━━━━</b>
 
@@ -91,8 +90,7 @@ def man_hinh_khoa():
 <b><a href="{BOSS_LINK}">@HOANGTUNGS8</a></b>
 
 <b>━━━━━━━━━━━━━━━━━━━━</b>
-<b>💎 NHẬP MÃ KÍCH HOẠT VÀO KHUNG CHAT</b>
-"""
+<b>💎 NHẬP MÃ KÍCH HOẠT VÀO KHUNG CHAT</b>"""
 
 def menu_chon_sanh():
     return InlineKeyboardMarkup(
@@ -180,8 +178,7 @@ def ket_qua_xac_nhan(user_id, ket_qua):
         cai = random.randint(25, 45)
         icon = "🟨"
 
-    return f"""
-<b>✅ KẾT QUẢ ĐÃ ĐƯỢC XÁC NHẬN</b>
+    return f"""<b>✅ KẾT QUẢ ĐÃ ĐƯỢC XÁC NHẬN</b>
 <b>━━━━━━━━━━━━━━━━━━</b>
 
 {ban_text}<b>📈 KẾT QUẢ DỰ ĐOÁN</b>
@@ -198,8 +195,7 @@ def ket_qua_xac_nhan(user_id, ket_qua):
 
 <b>━━━━━━━━━━━━━━━━━━</b>
 <b>👑 LIÊN HỆ TELEGRAM:</b>
-<b><a href="{BOSS_LINK}">@HOANGTUNGS8</a></b>
-"""
+<b><a href="{BOSS_LINK}">@HOANGTUNGS8</a></b>"""
 
 async def gui_man_hinh_khoa(msg):
     banner = get_banner()
@@ -210,16 +206,14 @@ async def gui_man_hinh_khoa(msg):
 
 async def gui_man_hinh_vip(msg):
     banner = get_banner()
-    text = """
-<b>✅ KÍCH HOẠT THÀNH CÔNG VIP</b>
+    text = """<b>✅ KÍCH HOẠT THÀNH CÔNG VIP</b>
 <b>━━━━━━━━━━━━━━━━━━━━</b>
 
-<b>👑 TÀI KHOẢN ĐÃ ĐƯỢC MỞ KHÓA</b>
+<b>👑 TÀI KHỎAN ĐÃ ĐƯỢC MỞ KHÓA</b>
 <b>🎯 HỆ THỐNG AI VIP ĐÃ SẴN SÀNG</b>
 <b>🔥 GIAO DIỆN PHÂN TÍCH CAO CẤP</b>
 
-<b>💎 VUI LÒNG CHỌN SẢNH ĐỂ BẮT ĐẦU</b>
-"""
+<b>💎 VUI LÒNG CHỌN SẢNH ĐỂ BẮT ĐẦU</b>"""
     if banner:
         await msg.answer_photo(photo=banner, caption=text, reply_markup=menu_chon_sanh())
     else:
@@ -232,15 +226,13 @@ async def blink_waiting_message(request_id):
         for dot in dots:
             if request_id not in pending_orders:
                 return
-            text = f"""
-<b>✅ ĐÃ XÁC NHẬN LỆNH</b>
+            text = f"""<b>✅ ĐÃ XÁC NHẬN LỆNH</b>
 <b>━━━━━━━━━━━━━━━━━━</b>
 
 <b>🤖 CHAT GPT ĐANG TÍNH TOÁN KẾT QUẢ{dot}</b>
 <b>🎲 BÀN: {info["table"]}</b>
 
-<b>⏳ VUI LÒNG CHỜ BOSS XÁC NHẬN KẾT QUẢ</b>
-"""
+<b>⏳ VUI LÒNG CHỜ BOSS XÁC NHẬN KẾT QUẢ</b>"""
             try:
                 await bot.edit_message_text(
                     chat_id=info["chat_id"],
@@ -256,12 +248,10 @@ async def start_cmd(message: types.Message):
     user_id = message.from_user.id
     if user_id in users_vip:
         await message.answer(
-            """
-<b>👑 AI GPT BACCARAT VIP</b>
+            """<b>👑 AI GPT BACCARAT VIP</b>
 <b>━━━━━━━━━━━━━━━━━━━━</b>
 
-<b>💎 VUI LÒNG CHỌN SẢNH ĐỂ BẮT ĐẦU</b>
-""",
+<b>💎 VUI LÒNG CHỌN SẢNH ĐỂ BẮT ĐẦU</b>""",
             reply_markup=menu_chon_sanh()
         )
         return
@@ -303,12 +293,10 @@ async def handle_text_message(msg: types.Message):
         return
 
     await msg.answer(
-        """
-<b>👑 AI GPT BACCARAT VIP</b>
+        """<b>👑 AI GPT BACCARAT VIP</b>
 <b>━━━━━━━━━━━━━━━━━━━━</b>
 
-<b>💎 VUI LÒNG CHỌN SẢNH ĐỂ BẮT ĐẦU</b>
-""",
+<b>💎 VUI LÒNG CHỌN SẢNH ĐỂ BẮT ĐẦU</b>""",
         reply_markup=menu_chon_sanh()
     )
 
@@ -342,17 +330,15 @@ async def callback(call: types.CallbackQuery):
         )
 
         await call.message.edit_text(
-            f"""
-<b>✅ BOSS ĐÃ XÁC NHẬN KẾT QUẢ</b>
+            f"""<b>✅ BOSS ĐÃ XÁC NHẬN KẾT QUẢ</b>
 
 <b>🎲 BÀN: {info["table"]}</b>
-<b>📌 KẾT QUẢ: {ket_qua}</b>
-"""
+<b>📌 KẾT QUẢ: {ket_qua}</b>"""
         )
         await call.answer("Đã gửi kết quả về nhóm.")
         return
 
-    # Nếu người lạ cố tình bấm nút
+    # Nếu người lạ cố tình bấm nút khi chưa kích hoạt
     if user_id not in users_vip:
         await call.answer("🔐 VUI LÒNG KÍCH HOẠT VIP TRƯỚC")
         banner = get_banner()
@@ -371,13 +357,11 @@ async def callback(call: types.CallbackQuery):
     if data == "show_rooms":
         await call.answer("🏛️ ĐANG MỞ DANH SÁCH SẢNH...")
         await call.message.answer(
-            """
-<b>🏛️ HỆ THỐNG SẢNH AI VIP</b>
+            """<b>🏛️ HỆ THỐNG SẢNH AI VIP</b>
 <b>━━━━━━━━━━━━━━━━━━━━</b>
 
 <b>✨ VUI LÒNG CHỌN SẢNH ĐỂ TIẾP TỤC</b>
-<b>🎯 AI ĐANG ĐỒNG BỘ DỮ LIỆU...</b>
-""",
+<b>🎯 AI ĐANG ĐỒNG BỘ DỮ LIỆU...</b>""",
             reply_markup=room_menu()
         )
         return
@@ -385,12 +369,10 @@ async def callback(call: types.CallbackQuery):
     if data == "room_sexy":
         await call.answer("🔥 ĐÃ CHỌN SẢNH SEXY")
         await call.message.answer(
-            """
-<b>🔥 SẢNH SEXY VIP</b>
+            """<b>🔥 SẢNH SEXY VIP</b>
 <b>━━━━━━━━━━━━━━━━━━━━</b>
 
-<b>🎯 VUI LÒNG CHỌN BÀN</b>
-""",
+<b>🎯 VUI LÒNG CHỌN BÀN</b>""",
             reply_markup=sexy_table_menu()
         )
         return
@@ -398,13 +380,11 @@ async def callback(call: types.CallbackQuery):
     if data == "room_dg":
         await call.answer("💎 ĐÃ CHỌN SẢNH DG")
         await call.message.answer(
-            """
-<b>💎 SẢNH DG VIP</b>
+            """<b>💎 SẢNH DG VIP</b>
 <b>━━━━━━━━━━━━━━━━━━━━</b>
 
 <b>⚠️ SẢNH NÀY ĐANG ĐƯỢC CẬP NHẬT</b>
-<b>🔥 VUI LÒNG CHỌN SẢNH SEXY ĐỂ SỬ DỤNG TRƯỚC</b>
-""",
+<b>🔥 VUI LÒNG CHỌN SẢNH SEXY ĐỂ SỬ DỤNG TRƯỚC</b>""",
             reply_markup=menu_chon_sanh()
         )
         return
@@ -412,13 +392,11 @@ async def callback(call: types.CallbackQuery):
     if data == "room_mt":
         await call.answer("⚡ ĐÃ CHỌN SẢNH MT")
         await call.message.answer(
-            """
-<b>⚡ SẢNH MT VIP</b>
+            """<b>⚡ SẢNH MT VIP</b>
 <b>━━━━━━━━━━━━━━━━━━━━</b>
 
 <b>⚠️ SẢNH NÀY ĐANG ĐƯỢC CẬP NHẬT</b>
-<b>🔥 VUI LÒNG CHỌN SẢNH SEXY ĐỂ SỬ DỤNG TRƯỚC</b>
-""",
+<b>🔥 VUI LÒNG CHỌN SẢNH SEXY ĐỂ SỬ DỤNG TRƯỚC</b>""",
             reply_markup=menu_chon_sanh()
         )
         return
@@ -434,12 +412,10 @@ async def callback(call: types.CallbackQuery):
         if user_id not in user_tables:
             await call.answer("🎲 VUI LÒNG CHỌN BÀN TRƯỚC")
             await call.message.answer(
-                """
-<b>⚠️ BẠN CHƯA CHỌN BÀN</b>
+                """<b>⚠️ BẠN CHƯA CHỌN BÀN</b>
 <b>━━━━━━━━━━━━━━━━━━━━</b>
 
-<b>🎲 VUI LÒNG CHỌN SẢNH VÀ CHỌN BÀN TRƯỚC KHI BẮT ĐẦU</b>
-""",
+<b>🎲 VUI LÒNG CHỌN SẢNH VÀ CHỌN BÀN TRƯỚC KHI BẮT ĐẦU</b>""",
                 reply_markup=menu_chon_sanh()
             )
             return
@@ -448,15 +424,13 @@ async def callback(call: types.CallbackQuery):
         table_name = user_tables[user_id]
 
         wait_msg = await call.message.answer(
-            f"""
-<b>✅ ĐÃ XÁC NHẬN LỆNH</b>
+            f"""<b>✅ ĐÃ XÁC NHẬN LỆNH</b>
 <b>━━━━━━━━━━━━━━━━━━</b>
 
 <b>🤖 CHAT GPT ĐANG TÍNH TOÁN KẾT QUẢ...</b>
 <b>🎲 BÀN: {table_name}</b>
 
-<b>⏳ VUI LÒNG CHỜ BOSS XÁC NHẬN KẾT QUẢ</b>
-"""
+<b>⏳ VUI LÒNG CHỜ BOSS XÁC NHẬN KẾT QUẢ</b>"""
         )
 
         pending_orders[request_id] = {
@@ -471,24 +445,20 @@ async def callback(call: types.CallbackQuery):
         try:
             await bot.send_message(
                 chat_id=BOSS_ID,
-                text=f"""
-<b>📩 CÓ LỆNH MỚI CẦN XÁC NHẬN</b>
+                text=f"""<b>📩 CÓ LỆNH MỚI CẦN XÁC NHẬN</b>
 <b>━━━━━━━━━━━━━━━━━━</b>
 
 <b>🎲 BÀN: {table_name}</b>
 <b>👤 USER ID: {user_id}</b>
 
-<b>Boss xem web rồi chọn kết quả bên dưới:</b>
-""",
+<b>Boss xem web rồi chọn kết quả bên dưới:</b>""",
                 reply_markup=boss_confirm_menu(request_id)
             )
         except Exception:
             await call.message.answer(
-                """
-<b>⚠️ CHƯA GỬI ĐƯỢC TIN NHẮN CHO BOSS</b>
+                """<b>⚠️ CHƯA GỬI ĐƯỢC TIN NHẮN CHO BOSS</b>
 
-<b>Boss cần nhắn /start riêng với bot trước.</b>
-"""
+<b>Boss cần nhắn /start riêng với bot trước.</b>"""
             )
 
         await call.answer("✅ ĐÃ GỬI LỆNH CHỜ BOSS XÁC NHẬN")
