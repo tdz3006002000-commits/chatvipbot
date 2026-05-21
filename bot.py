@@ -220,11 +220,16 @@ async def gui_man_hinh_vip(msg):
     img_path = "chonsanh.png"
     logging.info(f"[DEBUG] cwd={os.getcwd()}, files={os.listdir('.')}, chonsanh exists={os.path.exists(img_path)}")
     if os.path.exists(img_path):
-        await msg.answer_photo(
-            photo=FSInputFile(img_path),
-            caption=text,
-            reply_markup=menu_chon_sanh()
-        )
+        try:
+            await msg.answer_photo(
+                photo=FSInputFile(img_path),
+                caption=text,
+                reply_markup=menu_chon_sanh()
+            )
+            logging.info("[DEBUG] chonsanh photo sent OK")
+        except Exception as e:
+            logging.error(f"[DEBUG] chonsanh photo FAILED: {e}")
+            await msg.answer(text, reply_markup=menu_chon_sanh())
     else:
         await msg.answer(text, reply_markup=menu_chon_sanh())
 
@@ -443,11 +448,16 @@ async def callback(call: types.CallbackQuery):
             "<b>🚀 BẤM NÚT BẮT ĐẦU ĐỂ PHÂN TÍCH</b>"
         )
         if os.path.exists(img_path_chonban):
-            await call.message.answer_photo(
-                photo=FSInputFile(img_path_chonban),
-                caption=ten_ban_caption,
-                reply_markup=menu_bat_dau()
-            )
+            try:
+                await call.message.answer_photo(
+                    photo=FSInputFile(img_path_chonban),
+                    caption=ten_ban_caption,
+                    reply_markup=menu_bat_dau()
+                )
+                logging.info("[DEBUG] chonban photo sent OK")
+            except Exception as e:
+                logging.error(f"[DEBUG] chonban photo FAILED: {e}")
+                await call.message.answer(ten_ban_caption, reply_markup=menu_bat_dau())
         else:
             await call.message.edit_reply_markup(reply_markup=menu_bat_dau())
         return
