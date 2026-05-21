@@ -218,6 +218,7 @@ async def gui_man_hinh_vip(msg):
         "<b>💎 VUI LÒNG CHỌN SẢNH ĐỂ BẮT ĐẦU</b>"
     )
     img_path = "chonsanh.png"
+    logging.info(f"[DEBUG] cwd={os.getcwd()}, files={os.listdir('.')}, chonsanh exists={os.path.exists(img_path)}")
     if os.path.exists(img_path):
         await msg.answer_photo(
             photo=FSInputFile(img_path),
