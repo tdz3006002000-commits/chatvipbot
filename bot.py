@@ -212,7 +212,7 @@ async def gui_man_hinh_vip(msg):
     text = (
         "<b>✅ KÍCH HOẠT THÀNH CÔNG VIP</b>\n"
         "<b>━━━━━━━━━━━━━━━━━━━━</b>\n\n"
-        "<b>👑 TÀI KHỎAN ĐÃ ĐƯỢC MỞ KHÓA</b>\n"
+        "<b>👑 TÀI KHOẢN ĐÃ ĐƯỢC MỞ KHÓA</b>\n"
         "<b>🎯 HỆ THỐNG AI VIP ĐÃ SẴN SÀNG</b>\n"
         "<b>🔥 GIAO DIỆN PHÂN TÍCH CAO CẤP</b>\n\n"
         "<b>💎 VUI LÒNG CHỌN SẢNH ĐỂ BẮT ĐẦU</b>"
@@ -236,17 +236,25 @@ async def blink_waiting_message(request_id):
             if request_id not in pending_orders:
                 return
             try:
-                await bot.edit_message_text(
-                    chat_id=info["chat_id"],
-                    message_id=info["message_id"],
-                    text=(
-                        "<b>✅ ĐÃ XÁC NHẬN LỆNH</b>\n"
-                        "<b>━━━━━━━━━━━━━━━━━━</b>\n\n"
-                        f"<b>🤖 CHAT GPT ĐANG TÍNH TOÁN KẾT QUẢ{dot}</b>\n"
-                        f"<b>🎲 BÀN: {info['table']}</b>\n\n"
-                        "<b>⏳ VUI LÒNG CHỢ BOSS XÁC NHẬN KẾT QUẢ</b>"
-                    )
+                blink_text = (
+                    "<b>✅ ĐÃ XÁC NHẬN LỆNH</b>\n"
+                    "<b>━━━━━━━━━━━━━━━━━━</b>\n\n"
+                    f"<b>🤖 CHAT GPT ĐANG TÍNH TOÁN KẾT QUẢ{dot}</b>\n"
+                    f"<b>🎲 BÀN: {info['table']}</b>\n\n"
+                    "<b>⏳ VUI LÒNG CHỜ BOSS XÁC NHẬN KẾT QUẢ</b>"
                 )
+                if info.get("is_photo"):
+                    await bot.edit_message_caption(
+                        chat_id=info["chat_id"],
+                        message_id=info["message_id"],
+                        caption=blink_text
+                    )
+                else:
+                    await bot.edit_message_text(
+                        chat_id=info["chat_id"],
+                        message_id=info["message_id"],
+                        text=blink_text
+                    )
             except Exception:
                 pass
             await asyncio.sleep(0.8)
@@ -343,13 +351,21 @@ async def callback(call: types.CallbackQuery):
                 reply_markup=menu_sau_khi_vao_lenh()
             )
         else:
-            await bot.edit_message_text(
-                chat_id=info["chat_id"],
-                message_id=info["message_id"],
-                text=ket_qua_text,
-                reply_markup=menu_sau_khi_vao_lenh(),
-                disable_web_page_preview=True
-            )
+            if info.get("is_photo"):
+                await bot.edit_message_caption(
+                    chat_id=info["chat_id"],
+                    message_id=info["message_id"],
+                    caption=ket_qua_text,
+                    reply_markup=menu_sau_khi_vao_lenh()
+                )
+            else:
+                await bot.edit_message_text(
+                    chat_id=info["chat_id"],
+                    message_id=info["message_id"],
+                    text=ket_qua_text,
+                    reply_markup=menu_sau_khi_vao_lenh(),
+                    disable_web_page_preview=True
+                )
 
         await call.message.edit_text(
             f"<b>✅ BOSS ĐÃ XÁC NHẬN KẾT QUẢ</b>\n\n"
@@ -456,21 +472,24 @@ async def callback(call: types.CallbackQuery):
             "<b>━━━━━━━━━━━━━━━━━━</b>\n\n"
             "<b>🤖 CHAT GPT ĐANG TÍNH TOÁN KẾT QUẢ...</b>\n"
             f"<b>🎲 BÀN: {table_name}</b>\n\n"
-            "<b>⏳ VUI LÒNG CHỢ BOSS XÁC NHẬN KẾT QUẢ</b>"
+            "<b>⏳ VUI LÒNG CHỜ BOSS XÁC NHẬN KẾT QUẢ</b>"
         )
         if os.path.exists(img_path_dang):
             wait_msg = await call.message.answer_photo(
                 photo=FSInputFile(img_path_dang),
                 caption=dang_xu_ly_text
             )
+            is_photo_msg = True
         else:
             wait_msg = await call.message.answer(dang_xu_ly_text)
+            is_photo_msg = False
 
         pending_orders[request_id] = {
             "chat_id": call.message.chat.id,
             "message_id": wait_msg.message_id,
             "user_id": user_id,
-            "table": table_name
+            "table": table_name,
+            "is_photo": is_photo_msg
         }
 
         blink_tasks[request_id] = asyncio.create_task(blink_waiting_message(request_id))
@@ -493,7 +512,7 @@ async def callback(call: types.CallbackQuery):
                 "<b>Boss cần nhắn /start riêng với bot trước.</b>"
             )
 
-        await call.answer("✅ ĐÃ Gửi LỆNH CHỢ BOSS XÁC NHẬN")
+        await call.answer("✅ ĐÃ Gửi LỆNH CHỜ BOSS XÁC NHẬN")
         return
 
 
