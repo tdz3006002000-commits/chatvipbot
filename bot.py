@@ -194,9 +194,9 @@ def ket_qua_xac_nhan(user_id, ket_qua):
     )
 
 
-# ANH 1: chuakichhoat.png.PNG
+# ANH 1: chuakichhoat.png
 async def gui_man_hinh_khoa(msg):
-    img_path = "chuakichhoat.png.PNG"
+    img_path = "chuakichhoat.png"
     if os.path.exists(img_path):
         await msg.answer_photo(
             photo=FSInputFile(img_path),
@@ -207,7 +207,7 @@ async def gui_man_hinh_khoa(msg):
         await msg.answer(man_hinh_khoa(), disable_web_page_preview=True, reply_markup=ReplyKeyboardRemove())
 
 
-# ANH 2: chonsanh.png.PNG
+# ANH 2: chonsanh.png
 async def gui_man_hinh_vip(msg):
     text = (
         "<b>✅ KÍCH HOẠT THÀNH CÔNG VIP</b>\n"
@@ -217,7 +217,7 @@ async def gui_man_hinh_vip(msg):
         "<b>🔥 GIAO DIỆN PHÂN TÍCH CAO CẤP</b>\n\n"
         "<b>💎 VUI LÒNG CHỌN SẢNH ĐỂ BẮT ĐẦU</b>"
     )
-    img_path = "chonsanh.png.PNG"
+    img_path = "chonsanh.png"
     if os.path.exists(img_path):
         await msg.answer_photo(
             photo=FSInputFile(img_path),
@@ -325,9 +325,9 @@ async def callback(call: types.CallbackQuery):
             blink_tasks[request_id].cancel()
             del blink_tasks[request_id]
 
-        # ANH 5: ketqua.png.PNG
+        # ANH 5: ketqua.png
         ket_qua_text = ket_qua_xac_nhan(info["user_id"], ket_qua)
-        img_path_ketqua = "ketqua.png.PNG"
+        img_path_ketqua = "ketqua.png"
         if os.path.exists(img_path_ketqua):
             try:
                 await bot.delete_message(
@@ -418,8 +418,8 @@ async def callback(call: types.CallbackQuery):
         user_tables[user_id] = f"SẢNH SEXY BÀN {ten_ban}"
         await call.answer("✅ CHỌN BÀN THÀNH CÔNG")
 
-        # ANH 3: chonban.png.PNG
-        img_path_chonban = "chonban.png.PNG"
+        # ANH 3: chonban.png
+        img_path_chonban = "chonban.png"
         ten_ban_caption = (
             f"<b>✅ ĐÃ CHỌN SẢNH SEXY BÀN {ten_ban}</b>\n"
             "<b>━━━━━━━━━━━━━━━━━━━━</b>\n\n"
@@ -449,8 +449,8 @@ async def callback(call: types.CallbackQuery):
         request_id = uuid.uuid4().hex[:8]
         table_name = user_tables[user_id]
 
-        # ANH 4: dangtinhtoan.png.PNG
-        img_path_dang = "dangtinhtoan.png.PNG"
+        # ANH 4: dangtinhtoan.png
+        img_path_dang = "dangtinhtoan.png"
         dang_xu_ly_text = (
             "<b>✅ ĐÃ XÁC NHẬN LỆNH</b>\n"
             "<b>━━━━━━━━━━━━━━━━━━</b>\n\n"
