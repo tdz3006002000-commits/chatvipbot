@@ -55,22 +55,51 @@ async def check_user_click_limit(call: types.CallbackQuery) -> bool:
     user_click_counters[uid] = user_click_counters.get(uid, 0) + 1
 
     if user_click_counters[uid] > 10:
-        users_vip.discard(uid)
-        user_click_counters.pop(uid, None)
+        # Không kick khỏi vip ngay - chờ boss xác nhận gia hạn
+        user_click_counters[uid] = 0  # reset để không spam
 
         try:
             await call.message.edit_reply_markup(reply_markup=None)
         except Exception:
             pass
 
+        # Thông báo cho khách
         await call.message.answer(
-            f"❌ <b>HỬT LƯỢT SọNG CÔNG NGHỆ!</b>\n"
-            f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"⚠️ Tài khoản của bạn đã hết 10 lượt bấm lệnh trải nghiệm.\n"
-            f"🚀 Vui lòng liên hệ Telegram Boss để được cấp lại mật khẩu mới:\n"
-            f"👑 TELEGRAM BOSS: <a href='{BOSS_LINK}'>@HOANGTUNGS8</a>",
-            disable_web_page_preview=True
+            "<b>⏰ BẠN ĐÃ HẾT 10 LƯỢT SỬ DỤNG!</b>\n"
+            "<b>━━━━━━━━━━━━━━━━━━━━</b>\n\n"
+            "<b>🔒 Tài khoản tạm ngưng, chờ Boss gia hạn.</b>\n"
+            "<b>👑 Vui lòng liên hệ Boss để được gia hạn thêm.</b>",
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [InlineKeyboardButton(text="👑 LIÊN HỆ BOSS GIA HẠN", url=BOSS_LINK)]
+                ]
+            )
         )
+
+        # Thông báo cho Boss kèm 2 nút xác nhận
+        try:
+            await bot.send_message(
+                chat_id=BOSS_ID,
+                text=(
+                    f"🔔 <b>KHÁCH HẾT LƯỢT XIN GIA HẠN</b>\n"
+                    f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"🆔 User ID: <b>{uid}</b>\n"
+                    f"👤 Tên: <b>{call.from_user.full_name}</b>\n\n"
+                    f"📋 Chọn hành động bên dưới:"
+                ),
+                reply_markup=InlineKeyboardMarkup(
+                    inline_keyboard=[
+                        [
+                            InlineKeyboardButton(text="✅ GIA HẠN THÊM 10 LƯỢT", callback_data=f"giahanvip:{uid}"),
+                            InlineKeyboardButton(text="❌ HỦY GIA HẠN", callback_data=f"huygiahan:{uid}")
+                        ]
+                    ]
+                )
+            )
+        except Exception as e:
+            logging.error(f"Lỗi gửi thông báo gia hạn về Boss: {e}")
+
+        users_vip.discard(uid)
         return False
     return True
 
@@ -393,24 +422,110 @@ async def callback(call: types.CallbackQuery):
     if not await check_user_click_limit(call):
         return
 
+    # === XỬ LÝ GIA HẠN / HỦY GIA HẠN (Boss bấm) ===
+    if data.startswith("giahanvip:"):
+        if user_id != BOSS_ID:
+            await call.answer("Bạn không có quyền!")
+            return
+        target_uid = int(data.split(":")[1])
+        users_vip.add(target_uid)
+        user_click_counters[target_uid] = 0
+        await call.answer("✅ Đã gia hạn thành công!")
+        try:
+            await call.message.edit_text(
+                call.message.text + "\n\n<b>✅ BOSS ĐÃ GIA HẠN 10 LƯỢT MỚI</b>",
+                reply_markup=None
+            )
+        except Exception:
+            pass
+        # Thông báo cho khách
+        try:
+            await bot.send_message(
+                chat_id=target_uid,
+                text=(
+                    "<b>✅ TÀI KHOẢN ĐÃ ĐƯỢC GIA HẠN!</b>\n"
+                    "<b>━━━━━━━━━━━━━━━━━━━━</b>\n\n"
+                    "<b>🎉 Boss đã gia hạn thêm 10 lượt cho bạn!</b>\n"
+                    "<b>🚀 Bấm vào nút bên dưới để tiếp tục sử dụng.</b>"
+                ),
+                reply_markup=menu_chon_sanh()
+            )
+        except Exception as e:
+            logging.error(f"Lỗi gửi thông báo gia hạn cho khách: {e}")
+        return
+
+    if data.startswith("huygiahan:"):
+        if user_id != BOSS_ID:
+            await call.answer("Bạn không có quyền!")
+            return
+        target_uid = int(data.split(":")[1])
+        await call.answer("❌ Đã hủy gia hạn.")
+        try:
+            await call.message.edit_text(
+                call.message.text + "\n\n<b>❌ BOSS ĐÃ HỦY GIA HẠN</b>",
+                reply_markup=None
+            )
+        except Exception:
+            pass
+        # Thông báo cho khách
+        try:
+            await bot.send_message(
+                chat_id=target_uid,
+                text=(
+                    "<b>❌ YÊU CẦU GIA HẠN ĐÃ BỊ TỪ CHỐI</b>\n"
+                    "<b>━━━━━━━━━━━━━━━━━━━━</b>\n\n"
+                    "<b>🚀 Vui lòng liên hệ Boss để biết thêm chi tiết.</b>"
+                ),
+                reply_markup=InlineKeyboardMarkup(
+                    inline_keyboard=[
+                        [InlineKeyboardButton(text="👑 LIÊN HỆ BOSS", url=BOSS_LINK)]
+                    ]
+                )
+            )
+        except Exception as e:
+            logging.error(f"Lỗi gửi thông báo hủy gia hạn cho khách: {e}")
+        return
+
     if data == "show_rooms":
         await call.answer("🏛️ CHỌN SẢNH")
-        await call.message.answer(
+        sanh_text = (
             "<b>🏛️ CHỌN SẢNH VIP</b>\n"
             "<b>━━━━━━━━━━━━━━━━━━━━</b>\n\n"
-            "<b>🎯 VUI LÒNG CHỌN SẢNH BÊN DƯỚI</b>",
-            reply_markup=room_menu()
+            "<b>🎯 VUI LÒNG CHỌN SẢNH BÊN DƯỚI</b>"
         )
+        img_sanh = "chonsanh.png"
+        if os.path.exists(img_sanh):
+            try:
+                await call.message.answer_photo(
+                    photo=FSInputFile(img_sanh),
+                    caption=sanh_text,
+                    reply_markup=room_menu()
+                )
+            except Exception:
+                await call.message.answer(sanh_text, reply_markup=room_menu())
+        else:
+            await call.message.answer(sanh_text, reply_markup=room_menu())
         return
 
     if data == "room_sexy":
         await call.answer("🔥 ĐÃ CHỌN SẢNH SEXY")
-        await call.message.answer(
+        ban_text = (
             "<b>🔥 SẢNH SEXY VIP</b>\n"
             "<b>━━━━━━━━━━━━━━━━━━━━</b>\n\n"
-            "<b>🎯 VUI LÒNG CHỌN BÀN</b>",
-            reply_markup=sexy_table_menu()
+            "<b>🎯 VUI LÒNG CHỌN BÀN</b>"
         )
+        img_chonban = "chonban.png"
+        if os.path.exists(img_chonban):
+            try:
+                await call.message.answer_photo(
+                    photo=FSInputFile(img_chonban),
+                    caption=ban_text,
+                    reply_markup=sexy_table_menu()
+                )
+            except Exception:
+                await call.message.answer(ban_text, reply_markup=sexy_table_menu())
+        else:
+            await call.message.answer(ban_text, reply_markup=sexy_table_menu())
         return
 
     if data == "room_dg":
