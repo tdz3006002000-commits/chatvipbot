@@ -18,7 +18,7 @@ BOSS_LINK = "https://t.me/HOANGTUNGS8"
 BOSS_ID = 7616985896
 
 # MẬT KHẨU KHỞI CHẠY BAN ĐẦU (Viết hoa toàn bộ)
-current_password = "HARRY2005TDZ"
+current_password = "PGT666888"
 
 bot = Bot(
     token=TOKEN,
