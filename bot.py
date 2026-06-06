@@ -321,8 +321,7 @@ async def handle_text_message(msg: types.Message):
             user_click_counters[user_id] = 0
 
             await gui_man_hinh_vip(msg)
-
-                        return
+            return
 
         await gui_man_hinh_khoa(msg)
         return
@@ -637,3 +636,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
