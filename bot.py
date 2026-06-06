@@ -322,20 +322,7 @@ async def handle_text_message(msg: types.Message):
 
             await gui_man_hinh_vip(msg)
 
-            current_password = generate_random_password()
-            try:
-                await bot.send_message(
-                    chat_id=BOSS_ID,
-                    text=(
-                        f"🔑 Khách vừa kích hoạt thành công!\n"
-                        f"🆔 User ID: <b>{user_id}</b>\n"
-                        f"🔐 Mã VIP ngẫu nhiên mới: <b>{current_password}</b>\n"
-                        f"👉 Hãy lưu lại mã mới này để cấp cho khách tiếp theo!"
-                    )
-                )
-            except Exception as e:
-                logging.error(f"Lỗi gửi tin nhắn mật khẩu về cho Boss: {e}")
-            return
+                        return
 
         await gui_man_hinh_khoa(msg)
         return
