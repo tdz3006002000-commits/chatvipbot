@@ -619,10 +619,11 @@ async def callback(call: types.CallbackQuery):
                 ),
                 reply_markup=boss_confirm_menu(request_id)
             )
-        except Exception:
+        except Exception as e:
+            logging.error(f"[LENH] Loi gui tin nhan cho Boss: {e}")
             await call.message.answer(
                 "<b>⚠️ CHƯA Gửi ĐƯỢC TIN NHẬN CHO BOSS</b>\n\n"
-                "<b>Boss cần nhắn /start riêng với bot trước.</b>"
+                f"<b>Lỗi: {str(e)[:100]}</b>"
             )
 
         await call.answer("✅ ĐÃ Gửi LỆNH CHỜ BOSS XÁC NHẬN")
@@ -631,7 +632,7 @@ async def callback(call: types.CallbackQuery):
 
 async def main():
     print("BOT AI GPT BACCARAT VIP ĐANG CHẠY TRÊN RAILWAY...")
-    await dp.start_polling(bot)
+    await dp.start_polling(bot, drop_pending_updates=True)
 
 
 if __name__ == "__main__":
