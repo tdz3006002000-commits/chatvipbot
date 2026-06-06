@@ -274,9 +274,9 @@ async def blink_waiting_message(request_id):
                 blink_text = (
                     "<b>✅ ĐÃ XÁC NHẬN LỆNH</b>\n"
                     "<b>━━━━━━━━━━━━━━━━━━</b>\n\n"
-                    f"<b>🤖 CHAT GPT ĐANG TÍNH TOÁN KẾT QUẢ{dot}</b>\n"
+                    f"<b>🤖 OPEN AI GPT ĐANG TÍNH TOÁN KẾT QUẢ{dot}</b>\n"
                     f"<b>🎲 BÀN: {info['table']}</b>\n\n"
-                    "<b>⏳ VUI LÒNG CHỜ BOSS XÁC NHẬN KẾT QUẢ</b>"
+                    "<b>🤖 OPEN AI GPT ĐANG PHÂN TÍCH KẾT QUẢ...</b>"
                 )
                 if info.get("is_photo"):
                     await bot.edit_message_caption(
@@ -596,9 +596,9 @@ async def callback(call: types.CallbackQuery):
         dang_xu_ly_text = (
             "<b>✅ ĐÃ XÁC NHẬN LỆNH</b>\n"
             "<b>━━━━━━━━━━━━━━━━━━</b>\n\n"
-            "<b>🤖 CHAT GPT ĐANG TÍNH TOÁN KẾT QUẢ...</b>\n"
+            "<b>🤖 OPEN AI GPT ĐANG TÍNH TOÁN KẾT QUẢ...</b>\n"
             f"<b>🎲 BÀN: {table_name}</b>\n\n"
-            "<b>⏳ VUI LÒNG CHỜ BOSS XÁC NHẬN KẾT QUẢ</b>"
+            "<b>🤖 OPEN AI GPT ĐANG PHÂN TÍCH KẾT QUẢ...</b>"
         )
         if os.path.exists(img_path_dang):
             wait_msg = await call.message.answer_photo(
